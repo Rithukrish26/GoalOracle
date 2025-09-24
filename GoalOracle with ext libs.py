@@ -1,124 +1,238 @@
-import streamlit as st
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import poisson
+import pygame
+from pygame import MOUSEBUTTONDOWN, Surface
 
-# ==========================
-# COLOR PALETTE & STYLE
-# ==========================
-BLACK = "#0A0A0A"
-GOLD = "#D4AF37"
-BEIGE = "#F5F5DC"
-CREAM = "#FFFDD0"
+pygame.init()
 
-# Custom streamlit CSS for background and form
-st.markdown(f"""
-  <style>
-    .stApp {{
-      background: linear-gradient(135deg, {BLACK} 60%, {CREAM} 100%);
-    }}
-    .block-bg {{
-      background: {BEIGE};
-      border-radius: 20px;
-      padding: 2rem 2rem 1rem 2rem;
-      box-shadow: 0 4px 32px 0 {BLACK}77;
-    }}
-    h1, h2, .stTextInput > label, .stButton button {{
-      color: {GOLD};
-    }}
-    .minimalist {{
-      background-image:
-        repeating-linear-gradient(30deg, {GOLD}22 0px, {GOLD}22 2px, transparent 2px, transparent 80px),
-        radial-gradient(circle at 80% 10%, {CREAM}33 0, transparent 60%),
-        radial-gradient(circle at 10% 75%, {BEIGE}44 0, transparent 60%);
-      background-repeat: no-repeat;
-      background-size: cover;
-    }}
-  </style>
-""", unsafe_allow_html=True)
+screen_width = 800
+screen_height = 600
 
-st.markdown('<div class="minimalist"></div>', unsafe_allow_html=True)
+print("Thanks for trying out our program, hope you enjoyed! : )")
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("GoalOracle:- Home")
+font= pygame.font.Font(None, 30)
+text= font.render("PREDICT", True, 'Black')
+exitext= font.render("EXIT", True, "Black")
+background_color = (0, 128, 255)
+button= pygame.Rect(100,150,150,50)
+exitbutton= pygame.Rect(500,150,150,50)
 
-# ==========================
-# Page Title & Description
-# ==========================
-st.markdown("<h1 style='text-align: center;'>GoalOracle ⚽</h1>", unsafe_allow_html=True)
-st.markdown("<h3 style='text-align: center; color: #D4AF37;'>Football Score & Outcome Predictor</h3>", unsafe_allow_html=True)
-st.write("")
+pygame.display.flip()
 
-# ==========================
-# INPUT BLOCK
-# ==========================
-st.markdown('<div class="block-bg">', unsafe_allow_html=True)
-st.subheader("Enter Match Statistics:")
 
-colA, colB = st.columns(2)
+def game():
+    import pygame
+    import numpy as np
+    from scipy.stats import poisson
+    import matplotlib.pyplot as plt
+    import matplotlib.backends.backend_agg as agg
 
-with colA:
-    st.markdown("#### Team A")
-    goals_scored_a = st.number_input("Average goals scored per 90", min_value=0.0, step=0.1, format="%.2f", value=1.2)
-    goals_conceded_a = st.number_input("Average goals conceded per 90", min_value=0.0, step=0.1, format="%.2f", value=1.1)
-    shots_a = st.number_input("Shots on target per 90", min_value=0, value=5)
-    chances_a = st.number_input("Chances created per 90", min_value=0, value=8)
-    possession_a = st.number_input("Possession (%)", min_value=0.0, max_value=100.0, value=52.5)
-    pass_a = st.number_input("Pass completion (%)", min_value=0.0, max_value=100.0, value=83.4)
+    BLACK = (10, 10, 10)
+    GOLD = (212, 175, 55)
+    BEIGE = (245, 245, 220)
+    CREAM = (255, 253, 208)
+    WHITE = (255, 255, 255)
+    DARK_GREY = (40, 40, 40)
+    GRAY = (70, 70, 70)
 
-with colB:
-    st.markdown("#### Team B")
-    goals_scored_b = st.number_input("Average goals scored per 90  ", min_value=0.0, step=0.1, format="%.2f", value=1.0)
-    goals_conceded_b = st.number_input("Average goals conceded per 90  ", min_value=0.0, step=0.1, format="%.2f", value=1.3)
-    shots_b = st.number_input("Shots on target per 90  ", min_value=0, value=6)
-    chances_b = st.number_input("Chances created per 90  ", min_value=0, value=7)
-    possession_b = st.number_input("Possession (%) ", min_value=0.0, max_value=100.0, value=47.5)
-    pass_b = st.number_input("Pass completion (%) ", min_value=0.0, max_value=100.0, value=79.2)
-st.markdown('</div>', unsafe_allow_html=True)
+    pygame.init()
+    window_size = (1130, 770)
+    screen = pygame.display.set_mode(window_size)
+    pygame.display.set_caption("GoalOracle ⚽")
+    font = pygame.font.SysFont("Arial", 22)
+    big_font = pygame.font.SysFont("Arial", 28, bold=True)
+    panel_font = pygame.font.SysFont("Arial", 18)
+    clock = pygame.time.Clock()
+    bg = pygame.image.load('Bagoroucknd.png')
+    bg = pygame.transform.smoothscale(bg, (1130,770))
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+    # Logo load
+        try:
+            logo = pygame.image.load("Goal Oracle.png").convert_alpha()
+            logo = pygame.transform.smoothscale(logo, (130, 130))
+        except:
+            logo = None
 
-st.write("")
+        stats_keys = [
+            ("goals_scored", "Goals Scored"),
+            ("goals_conceded", "Goals Conceded"),
+            ("shots_on_target", "Shots on Target"),
+            ("chances_created", "Chances Created"),
+            ("possession", "Possession"),
+            ("pass_completion", "Pass Completion")
+        ]
 
-# ==========================
-# Calculate & Display Results
-# ==========================
-def calculate_score_probabilities(lambda_a, lambda_b, max_goals=5):
-    matrix = np.zeros((max_goals + 1, max_goals + 1))
-    for goals_a in range(max_goals + 1):
-        for goals_b in range(max_goals + 1):
-            matrix[goals_a][goals_b] = poisson.pmf(goals_a, lambda_a) * poisson.pmf(goals_b, lambda_b)
-    return matrix
+        class InputBox:
+            def __init__(self, x, y, w=260, h=30):
+                self.rect = pygame.Rect(x, y, w, h)
+                self.color_active = GOLD
+                self.color_inactive = DARK_GREY
+                self.color = self.color_inactive
+                self.text = ''
+                self.txt_surface = font.render(self.text, True, WHITE)
+                self.active = False
 
-def calculate_outcome_probabilities(prob_matrix):
-    win_a = np.tril(prob_matrix, -1).sum()
-    draw = np.trace(prob_matrix)
-    win_b = np.triu(prob_matrix, 1).sum()
-    return win_a, draw, win_b
+            def handle_event(self, event):
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    self.active = self.rect.collidepoint(event.pos)
+                    self.color = self.color_active if self.active else self.color_inactive
+                if event.type == pygame.KEYDOWN and self.active:
+                    if event.key == pygame.K_RETURN:
+                        self.active = False
+                        self.color = self.color_inactive
+                    elif event.key == pygame.K_BACKSPACE:
+                        self.text = self.text[:-1]
+                    else:
+                        if event.unicode.isdigit() or (event.unicode == '.' and '.' not in self.text):
+                            self.text += event.unicode
+                    self.txt_surface = font.render(self.text, True, WHITE)
 
-if st.button("🔮 Predict!"):
-    # Use attacking strengths (lambda) for score prediction
-    lambda_a = goals_scored_a
-    lambda_b = goals_scored_b
+            def draw(self, screen):
+                pygame.draw.rect(screen, self.color, self.rect, border_radius=5)
+                text_y = self.rect.y + (self.rect.height - self.txt_surface.get_height()) // 2
+                screen.blit(self.txt_surface, (self.rect.x + 8, text_y))
+                pygame.draw.rect(screen, GRAY, self.rect, 2, border_radius=5)
 
-    # Score probabilities matrix
-    prob_matrix = calculate_score_probabilities(lambda_a, lambda_b)
+            def get_value(self):
+                try:
+                    return float(self.text)
+                except:
+                    return None
 
-    # Display outcome summary
-    win_a, draw, win_b = calculate_outcome_probabilities(prob_matrix)
-    st.markdown(f"<h4 style='color:{GOLD};'>Match Outcome Probabilities</h4>", unsafe_allow_html=True)
-    st.write(f"🏆 Team A Win: **{win_a:.2%}**")
-    st.write(f"🤝 Draw: **{draw:.2%}**")
-    st.write(f"⚔ Team B Win: **{win_b:.2%}**")
+            def clear(self):
+                self.text = ''
+                self.txt_surface = font.render(self.text, True, WHITE)
 
-    # Show heatmap
-    st.write("")
-    st.markdown(f"<h4 style='color:{GOLD};'>Score Probability Heatmap</h4>", unsafe_allow_html=True)
-    fig, ax = plt.subplots(figsize=(8,6))
-    plt.imshow(prob_matrix, cmap="Blues", interpolation="nearest")
-    plt.colorbar(label="Probability")
-    plt.xlabel("Team B Goals", color=BLACK)
-    plt.ylabel("Team A Goals", color=BLACK)
-    ax.set_xticks(np.arange(prob_matrix.shape[1]))
-    ax.set_yticks(np.arange(prob_matrix.shape[0]))
-    for i in range(prob_matrix.shape[0]):
-        for j in range(prob_matrix.shape[1]):
-            ax.text(j, i, f"{prob_matrix[i, j]:.1%}", ha='center', va='center', color='black', fontsize=12)
-    plt.tight_layout()
-    st.pyplot(fig)
+        class Button:
+            def __init__(self, x, y, w, h, text):
+                self.rect = pygame.Rect(x, y, w, h)
+                self.text = text
+            def draw(self, surface):
+                txt_surf = big_font.render(self.text, True, WHITE)
+                pygame.draw.rect(surface, GRAY, self.rect, border_radius=5)
+                surface.blit(txt_surf, ((self.rect.centerx - 5) - txt_surf.get_width() // 2,
+                                        self.rect.centery - txt_surf.get_height() // 2))
+            def is_clicked(self, event):
+                return event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos)
+
+        def calculate_score_probabilities(lambda_a, lambda_b, max_goals=5):
+            matrix = np.zeros((max_goals + 1, max_goals + 1))
+            for i in range(max_goals+1):
+                for j in range(max_goals+1):
+                    matrix[i][j] = poisson.pmf(i, lambda_a) * poisson.pmf(j, lambda_b)
+            return matrix
+
+        def calculate_outcome_probabilities(prob_matrix):
+            win_a = np.tril(prob_matrix, -1).sum()
+            draw = np.trace(prob_matrix)
+            win_b = np.triu(prob_matrix, 1).sum()
+            return win_a, draw, win_b
+
+        def draw_background(surface):
+            screen.blit(bg, (0,0))
+
+        input_boxes = {
+            "Team A": {},
+            "Team B": {}
+        }
+
+        # Layout coordinates as per screenshot
+        team_a_x = 180
+        team_b_x = 660
+        inputs_y = [235, 285, 335, 385, 435, 485]
+
+        for idx, (key, label) in enumerate(stats_keys):
+            input_boxes["Team A"][key] = InputBox(team_a_x, inputs_y[idx], 260, 36)
+            input_boxes["Team B"][key] = InputBox(team_b_x, inputs_y[idx], 260, 36)
+
+        labels_y = [y - 22 for y in inputs_y]
+        button_y = 570
+        predict_btn = Button(window_size[0]//2 - 140, button_y, 180, 50, "Predict")
+        reset_btn = Button(window_size[0]//2 + 25, button_y, 180, 50, "Reset")
+
+        panel_rect = pygame.Rect(0, 645, window_size[0], 95)
+        result_lines = ["Most Probable Score: -", "Team A Win: - | Draw: - | Team B Win: -"]
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                for team in input_boxes:
+                    for key in input_boxes[team]:
+                        input_boxes[team][key].handle_event(event)
+                if predict_btn.is_clicked(event):
+                    try:
+                        team_a_stats = {k: input_boxes["Team A"][k].get_value() for k, _ in stats_keys}
+                        team_b_stats = {k: input_boxes["Team B"][k].get_value() for k, _ in stats_keys}
+                        if None in team_a_stats.values() or None in team_b_stats.values():
+                            raise ValueError("Invalid input detected")
+                        lambda_a = team_a_stats["goals_scored"]
+                        lambda_b = team_b_stats["goals_scored"]
+                        prob_matrix = calculate_score_probabilities(lambda_a, lambda_b)
+                        win_a, draw, win_b = calculate_outcome_probabilities(prob_matrix)
+                        max_prob = np.max(prob_matrix)
+                        max_idx = np.unravel_index(np.argmax(prob_matrix), prob_matrix.shape)
+                        result_lines = [
+                            f"Most Probable Score: {max_idx[0]} - {max_idx[1]} ({max_prob:.2%})",
+                            f"Team A Win: {win_a:.2%} | Draw: {draw:.2%} | Team B Win: {win_b:.2%}",
+                        ]
+                    except Exception:
+                        result_lines = ["Invalid input detected. Please correct entries.", ""]
+                if reset_btn.is_clicked(event):
+                    for team in input_boxes:
+                        for key in input_boxes[team]:
+                            input_boxes[team][key].clear()
+                    result_lines = ["Most Probable Score: -", "Team A Win: - | Draw: - | Team B Win: -"]
+
+            draw_background(screen)
+            if logo:
+                screen.blit(logo, (window_size[0]//2 - logo.get_width()//2, 38))
+                pygame.draw.rect(screen, (50,40,20), (window_size[0]//2 - logo.get_width()//2, 38, 130, 130),8, border_radius= 200)
+            team_a_lbl = big_font.render("Team A", True, WHITE)
+            team_b_lbl = big_font.render("Team B", True, WHITE)
+            screen.blit(team_a_lbl, (team_a_x + 60, 185))
+            screen.blit(team_b_lbl, (team_b_x + 60, 185))
+            for i, (key, label) in enumerate(stats_keys):
+                label_surf = font.render(label, True, WHITE)
+                screen.blit(label_surf, (team_a_x + 5, labels_y[i]))
+                input_boxes["Team A"][key].draw(screen)
+                screen.blit(label_surf, (team_b_x + 5, labels_y[i]))
+                input_boxes["Team B"][key].draw(screen)
+            predict_btn.draw(screen)
+            reset_btn.draw(screen)
+            pygame.draw.rect(screen, DARK_GREY, panel_rect, border_radius=20)
+            pygame.draw.rect(screen, CREAM, panel_rect, 5, border_radius=20)
+            for i, line in enumerate(result_lines):
+                txt_surf = panel_font.render(line, True, WHITE)
+                screen.blit(txt_surf, (51, 663 + i * 28))
+            pygame.draw.rect(screen, CREAM, (window_size[0] // 2 + 30, button_y, 175, 50), 5)
+            pygame.draw.rect(screen, CREAM, (window_size[0]//2 - 145, button_y, 175, 50), 5)
+            pygame.display.flip()
+            clock.tick(60)
+        return
+
+
+run = True
+while run:
+   for event in pygame.event.get():
+       if event.type == pygame.QUIT:
+           pygame.quit()
+   if event.type == MOUSEBUTTONDOWN:
+       if exitbutton.collidepoint(event.pos):
+           pygame.quit()
+   if event.type == MOUSEBUTTONDOWN:
+       if button.collidepoint(event.pos):
+           game()
+
+   bg2 = pygame.image.load('Backgorund.png')
+   screen.blit(bg2, (0,0))
+   pygame.draw.rect(screen, 'beige', button, border_radius=10)
+   screen.blit(text, (button.x + 30, button.y + 15))
+   pygame.draw.rect(screen, 'beige', exitbutton, border_radius=10)
+   screen.blit(exitext, (exitbutton.x + 50, exitbutton.y + 15))
+   pygame.display.flip()
 
