@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 from scipy.stats import poisson
 import matplotlib.pyplot as plt
-from PIL import Image
+from PIL import Image, ImageDraw
 
 st.set_page_config(page_title="GoalOracle ⚽", layout="wide")
 
@@ -25,45 +25,117 @@ def most_probable_score(prob_matrix):
     idx = np.unravel_index(np.argmax(prob_matrix), prob_matrix.shape)
     return idx, prob_matrix[idx]
 
-# --- Page UI ---------------------------------------------------------------
+# --- Custom CSS ------------------------------------------------------------
 
-st.title("GoalOracle ⚽ — Predict")
+st.markdown("""
+<style>
+.centered-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.input-header {
+    text-align: center;
+    color: #003366; 
+    margin-top: -10px;
+    margin-bottom: -5px;
+}
+.center-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 100px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+button[kind="secondary"], button[kind="primary"] {
+    width: 600px !important;
+    height: 60px !important;
+    font-size: 20px !important;
+    border-radius: 12px !important;
+    transition: all 0.3s ease !important;
+}
+button:hover {
+    box-shadow: 0px 0px 20px rgba(0, 128, 255, 0.7) !important;
+    background-color: #0066cc !important;
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Centered logo with cream frame
+# --- Header Section (Visible Logo + Inline Title) --------------------------
+
+import base64
+from io import BytesIO
+
+st.markdown("""
+<style>
+.header-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 20px;
+    margin-top: -65px;
+}
+.header-inline img {
+    border-radius: 50%;
+    border: 4px solid rgb(255, 253, 208);
+}
+.header-inline h1 {
+    font-size: 2.4em;
+    margin: 0;
+    font-weight: 600;
+}
+</style>
+""", unsafe_allow_html=True)
+
 try:
     logo = Image.open("Goal Oracle.png").convert("RGBA")
-    size = (160, 160)
+    size = (130, 130)
     logo = logo.resize(size)
 
-    # Create a circular mask
+    # circular mask
     mask = Image.new("L", size, 0)
-    from PIL import ImageDraw
     draw = ImageDraw.Draw(mask)
     draw.ellipse((0, 0, size[0], size[1]), fill=255)
-
-    # Apply mask
     logo.putalpha(mask)
 
-    # Add cream frame
-    frame_size = 8
-    frame_color = (255, 253, 208, 255)  # cream
-    framed = Image.new("RGBA", (size[0] + frame_size * 2, size[1] + frame_size * 2), (0, 0, 0, 0))
+    # create final framed logo on transparent background
+    frame_size = 6
+    frame_color = (255, 253, 208, 255)
+    framed_size = (size[0] + frame_size * 2, size[1] + frame_size * 2)
+    framed = Image.new("RGBA", framed_size, (0, 0, 0, 0))
     draw_frame = ImageDraw.Draw(framed)
-    draw_frame.ellipse((0, 0, framed.size[0]-1, framed.size[1]-1), fill=frame_color)
+    draw_frame.ellipse((0, 0, framed_size[0]-1, framed_size[1]-1), fill=frame_color)
     framed.paste(logo, (frame_size, frame_size), logo)
 
-    st.markdown("<div style='display:flex; justify-content:center;'>", unsafe_allow_html=True)
-    st.image(framed)
-    st.markdown("</div>", unsafe_allow_html=True)
-except Exception:
-    st.write("")
+    # convert logo to base64
+    buffered = BytesIO()
+    framed.save(buffered, format="PNG")
+    encoded_logo = base64.b64encode(buffered.getvalue()).decode()
 
-st.markdown("---")
+    st.markdown(
+        f"""
+        <div class='header-inline'>
+            <img src='data:image/png;base64,{encoded_logo}' width='130'>
+            <h1>GoalOracle ⚽ — Predict the Unpredictable</h1>
+        </div>
+        <hr>
+        """,
+        unsafe_allow_html=True
+    )
 
-col1, col2, col3 = st.columns([1, 0.8, 1])
+except Exception as e:
+    st.error(f"Logo could not be displayed: {e}")
+
+
+# --- Layout Columns --------------------------------------------------------
+
+col1, col3 = st.columns(2)
 
 with col1:
-    st.header("Team A — Inputs")
+    st.markdown("<h3 class='input-header'>Team A — Inputs</h3>", unsafe_allow_html=True)
     ta_goals = st.number_input("Goals Scored (λ)", min_value=0.0, value=1.2, step=0.1, format="%.2f", key="ta_goals")
     ta_conceded = st.number_input("Goals Conceded", min_value=0.0, value=1.0, step=0.1)
     ta_sot = st.number_input("Shots on Target", min_value=0.0, value=3.0, step=0.1)
@@ -72,7 +144,7 @@ with col1:
     ta_pass = st.number_input("Pass Completion (%)", min_value=0.0, max_value=100.0, value=82.0, step=0.1)
 
 with col3:
-    st.header("Team B — Inputs")
+    st.markdown("<h3 class='input-header'>Team B — Inputs</h3>", unsafe_allow_html=True)
     tb_goals = st.number_input("Goals Scored (λ)", min_value=0.0, value=1.0, step=0.1, format="%.2f", key="tb_goals")
     tb_conceded = st.number_input("Goals Conceded", min_value=0.0, value=1.1, step=0.1)
     tb_sot = st.number_input("Shots on Target", min_value=0.0, value=2.7, step=0.1)
@@ -80,21 +152,18 @@ with col3:
     tb_poss = st.number_input("Possession (%)", min_value=0.0, max_value=100.0, value=48.0, step=0.1)
     tb_pass = st.number_input("Pass Completion (%)", min_value=0.0, max_value=100.0, value=79.0, step=0.1)
 
-with col2:
-    st.write("\n" * 3)
-    predict = st.button("Predict")
-    reset = st.button("Reset")
+st.markdown("<div class='center-buttons'>", unsafe_allow_html=True)
+predict = st.button("Predict")
+reset = st.button("Reset")
+st.markdown("</div>", unsafe_allow_html=True)
 
-# Reset behaviour
+# --- Logic -----------------------------------------------------------------
+
 if reset:
     for k in ["ta_goals", "tb_goals"]:
         if k in st.session_state:
             st.session_state[k] = 0.0
     st.experimental_rerun()
-
-# Default display
-result_placeholder = st.empty()
-heatmap_placeholder = st.empty()
 
 if predict:
     try:
@@ -107,55 +176,26 @@ if predict:
         win_a, draw, win_b = calculate_outcome_probabilities(prob_matrix)
         (best_i, best_j), best_p = most_probable_score(prob_matrix)
 
-        with result_placeholder.container():
-            st.subheader("Prediction Results")
-            st.write(f"**Most Probable Score:** {best_i} - {best_j} ({best_p:.2%})")
-            st.write(f"**Team A Win:** {win_a:.2%}   |   **Draw:** {draw:.2%}   |   **Team B Win:** {win_b:.2%}")
-            st.markdown("---")
-            st.write("**Input summary**")
-            st.write({
-                "Team A": {
-                    "Goals Scored (λ)": lambda_a,
-                    "Goals Conceded": ta_conceded,
-                    "Shots on Target": ta_sot,
-                    "Chances Created": ta_chances,
-                    "Possession": ta_poss,
-                    "Pass Completion": ta_pass,
-                },
-                "Team B": {
-                    "Goals Scored (λ)": lambda_b,
-                    "Goals Conceded": tb_conceded,
-                    "Shots on Target": tb_sot,
-                    "Chances Created": tb_chances,
-                    "Possession": tb_poss,
-                    "Pass Completion": tb_pass,
-                }
-            })
+        st.subheader("Prediction Results")
+        st.write(f"Most Probable Score: {best_i} - {best_j} ({best_p:.2%})")
+        st.write(f"Team A Win: {win_a:.2%}   |   Draw: {draw:.2%}   |   Team B Win: {win_b:.2%}")
+        st.markdown("---")
 
-        with heatmap_placeholder.container():
-            fig, ax = plt.subplots()
-            im = ax.imshow(prob_matrix, origin='lower', aspect='auto')
-            ax.set_xlabel('Team B Goals')
-            ax.set_ylabel('Team A Goals')
-            ax.set_title('Score Probability Matrix')
-            for i in range(prob_matrix.shape[0]):
-                for j in range(prob_matrix.shape[1]):
-                    p = prob_matrix[i, j]
-                    if p > 0.001:
-                        ax.text(j, i, f"{p:.1%}", ha='center', va='center', fontsize=8)
-            fig.colorbar(im, ax=ax)
-            st.pyplot(fig)
-
-        flat = []
+        fig, ax = plt.subplots()
+        im = ax.imshow(prob_matrix, origin='lower', aspect='auto')
+        ax.set_xlabel('Team B Goals')
+        ax.set_ylabel('Team A Goals')
+        ax.set_title('Score Probability Matrix')
         for i in range(prob_matrix.shape[0]):
             for j in range(prob_matrix.shape[1]):
-                flat.append(((i, j), prob_matrix[i, j]))
-        flat_sorted = sorted(flat, key=lambda x: x[1], reverse=True)
-        top10 = [(f"{a}-{b}", f"{p:.2%}") for (a, b), p in flat_sorted[:10]]
-        st.table(top10)
+                p = prob_matrix[i, j]
+                if p > 0.001:
+                    ax.text(j, i, f"{p:.1%}", ha='center', va='center', fontsize=8)
+        fig.colorbar(im, ax=ax)
+        st.pyplot(fig)
 
     except Exception as e:
         st.error(f"Invalid input detected: {e}")
 
 st.markdown("---")
-st.caption("GoalOracle — Poisson-based score prediction. Uses the 'Goals Scored' inputs as the Poisson λ for each team. This app preserves the original structure and formula from your Pygame project.")
+st.caption("GoalOracle — Poisson-based score prediction using the 'Goals Scored' inputs as λ for each team.")
