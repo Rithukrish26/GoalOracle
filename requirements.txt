@@ -1,5 +1,5 @@
-Streamlit
-Numpy
-Scipy
-Matplotlib
-PIL
+streamlit
+numpy
+scipy - poisson
+matplotlib
+PIL - Image, ImageDraw
