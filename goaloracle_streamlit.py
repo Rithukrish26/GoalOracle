@@ -56,9 +56,9 @@ button[kind="secondary"], button[kind="primary"] {
     transition: all 0.3s ease !important;
 }
 button:hover {
-    box-shadow: 0px 0px 20px rgba(0, 128, 255, 0.7) !important;
-    background-color: #0066cc !important;
-    color: white !important;
+    box-shadow: 0px 0px 20px rgba(255, 253, 208, 0.7) !important;
+    background-color: #f5f5dc !important;
+    color: black !important;
 }
 </style>
 """, unsafe_allow_html=True)
